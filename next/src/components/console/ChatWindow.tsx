@@ -1,15 +1,16 @@
-import type { ReactNode } from "react";
-import React, { useEffect, useRef, useState } from "react";
-import { useTranslation } from "next-i18next";
-import HideShow from "../motions/HideShow";
 import clsx from "clsx";
+import { useTranslation } from "next-i18next";
+import React, { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { FaArrowCircleDown, FaCommentDots } from "react-icons/fa";
+import { ImSpinner2 } from "react-icons/im";
+
 import type { HeaderProps } from "./MacWindowHeader";
 import { MacWindowHeader, messageListId } from "./MacWindowHeader";
-import { FaArrowCircleDown, FaCommentDots } from "react-icons/fa";
 import { useAgentStore } from "../../stores";
-import { ImSpinner2 } from "react-icons/im";
-import Input from "../Input";
 import Button from "../Button";
+import Input from "../Input";
+import HideShow from "../motions/HideShow";
 
 interface ChatControls {
   value: string;
@@ -25,13 +26,7 @@ interface ChatWindowProps extends HeaderProps {
   chatControls?: ChatControls;
 }
 
-const ChatWindow = ({
-  messages,
-  children,
-  title,
-  visibleOnMobile,
-  chatControls,
-}: ChatWindowProps) => {
+const ChatWindow = ({ messages, children, title, chatControls }: ChatWindowProps) => {
   const [t] = useTranslation();
   const [hasUserScrolled, setHasUserScrolled] = useState(false);
   const isThinking = useAgentStore.use.isAgentThinking();
@@ -64,13 +59,12 @@ const ChatWindow = ({
   return (
     <div
       className={clsx(
-        "border-translucent h-full w-full max-w-[inherit] flex-1 flex-col overflow-auto rounded-2xl border-2 border-white/20 bg-zinc-900 text-white shadow-2xl drop-shadow-lg transition-all duration-500",
-        visibleOnMobile ? "flex" : "hidden xl:flex"
+        "border-translucent flex h-full w-full max-w-[inherit] flex-1 flex-col overflow-auto rounded-2xl border-2 border-white/20 bg-zinc-900 text-white shadow-2xl drop-shadow-lg transition-all duration-500"
       )}
     >
       <HideShow
         showComponent={hasUserScrolled}
-        className="absolute bottom-14 right-6 cursor-pointer"
+        className="absolute bottom-11 right-6 cursor-pointer sm:bottom-14"
       >
         <FaArrowCircleDown
           onClick={() => handleScrollToBottom("smooth")}
@@ -98,7 +92,7 @@ const ChatWindow = ({
         </div>
       </div>
       {chatControls && (
-        <div className="mt-auto flex flex-row gap-2 p-2 sm:p-4">
+        <div className="mt-auto flex flex-row gap-2 p-2 pt-0 sm:p-4">
           <Input
             small
             placeholder="Chat with your agent..."

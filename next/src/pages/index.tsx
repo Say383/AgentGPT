@@ -1,53 +1,52 @@
-import React, { useEffect, useRef } from "react";
-import { useTranslation } from "next-i18next";
+import clsx from "clsx";
+import { AnimatePresence, motion } from "framer-motion";
 import { type GetStaticProps, type NextPage } from "next";
-import Button from "../components/Button";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import React, { useEffect, useRef } from "react";
 import { FaCog, FaRobot, FaStar } from "react-icons/fa";
-import AutonomousAgent from "../services/agent/autonomous-agent";
+
+import nextI18NextConfig from "../../next-i18next.config.js";
+import AppTitle from "../components/AppTitle";
+import Button from "../components/Button";
+import AgentControls from "../components/console/AgentControls";
+import { ChatMessage } from "../components/console/ChatMessage";
+import ChatWindow from "../components/console/ChatWindow";
+import { ChatWindowTitle } from "../components/console/ChatWindowTitle";
+import ExampleAgents from "../components/console/ExampleAgents";
+import Summarize from "../components/console/SummarizeButton";
 import HelpDialog from "../components/dialog/HelpDialog";
-import { useAuth } from "../hooks/useAuth";
+import { SignInDialog } from "../components/dialog/SignInDialog";
+import { ToolsDialog } from "../components/dialog/ToolsDialog";
+import TaskSidebar from "../components/drawer/TaskSidebar";
+import Input from "../components/Input";
+import Expand from "../components/motions/expand";
+import FadeIn from "../components/motions/FadeIn";
 import { useAgent } from "../hooks/useAgent";
-import { isEmptyOrBlank } from "../utils/whitespace";
+import { useAuth } from "../hooks/useAuth";
+import { useSettings } from "../hooks/useSettings";
+import DashboardLayout from "../layout/dashboard";
+import { AgentApi } from "../services/agent/agent-api";
+import { DefaultAgentRunModel } from "../services/agent/agent-run-model";
+import AutonomousAgent from "../services/agent/autonomous-agent";
+import { MessageService } from "../services/agent/message-service";
 import {
   resetAllAgentSlices,
   resetAllMessageSlices,
   useAgentStore,
   useMessageStore,
 } from "../stores";
-import { serverSideTranslations } from "next-i18next/serverSideTranslations";
-import { languages } from "../utils/languages";
-import nextI18NextConfig from "../../next-i18next.config.js";
-import { SignInDialog } from "../components/dialog/SignInDialog";
-import { ToolsDialog } from "../components/dialog/ToolsDialog";
-import DashboardLayout from "../layout/dashboard";
-import AppTitle from "../components/AppTitle";
-import FadeIn from "../components/motions/FadeIn";
-import Input from "../components/Input";
-import clsx from "clsx";
-import Expand from "../components/motions/expand";
-import ChatWindow from "../components/console/ChatWindow";
-import { TaskWindow } from "../components/TaskWindow";
-import { AnimatePresence, motion } from "framer-motion";
-import { useSettings } from "../hooks/useSettings";
-import { useRouter } from "next/router";
 import { useAgentInputStore } from "../stores/agentInputStore";
-import { MessageService } from "../services/agent/message-service";
-import { DefaultAgentRunModel } from "../services/agent/agent-run-model";
 import { resetAllTaskSlices, useTaskStore } from "../stores/taskStore";
-import { ChatWindowTitle } from "../components/console/ChatWindowTitle";
-import { AgentApi } from "../services/agent/agent-api";
 import { toApiModelSettings } from "../utils/interfaces";
-import ExampleAgents from "../components/console/ExampleAgents";
-import Summarize from "../components/console/SummarizeButton";
-import AgentControls from "../components/console/AgentControls";
-import { ChatMessage } from "../components/console/ChatMessage";
+import { languages } from "../utils/languages";
+import { isEmptyOrBlank } from "../utils/whitespace";
 
 const Home: NextPage = () => {
   const { t } = useTranslation("indexPage");
   const addMessage = useMessageStore.use.addMessage();
   const messages = useMessageStore.use.messages();
   const tasks = useTaskStore.use.tasks();
-  const { query } = useRouter();
 
   const setAgent = useAgentStore.use.setAgent();
   const agentLifecycle = useAgentStore.use.lifecycle();
@@ -55,13 +54,12 @@ const Home: NextPage = () => {
   const agent = useAgentStore.use.agent();
 
   const fullscreen = agent !== null;
-  const { session, status } = useAuth();
+  const { session } = useAuth();
   const nameInput = useAgentInputStore.use.nameInput();
   const setNameInput = useAgentInputStore.use.setNameInput();
   const goalInput = useAgentInputStore.use.goalInput();
   const setGoalInput = useAgentInputStore.use.setGoalInput();
   const [chatInput, setChatInput] = React.useState("");
-  const [mobileVisibleWindow, setMobileVisibleWindow] = React.useState<"Chat" | "Tasks">("Chat");
   const { settings } = useSettings();
 
   const [showSignInDialog, setShowSignInDialog] = React.useState(false);
@@ -92,6 +90,7 @@ const Home: NextPage = () => {
 
   const handleNewAgent = (name: string, goal: string) => {
     if (session === null) {
+      storeAgentDataInLocalStorage(name, goal);
       setShowSignInDialog(true);
       return;
     }
@@ -121,6 +120,28 @@ const Home: NextPage = () => {
     newAgent?.run().then(console.log).catch(console.error);
   };
 
+  const storeAgentDataInLocalStorage = (name: string, goal: string) => {
+    const agentData = { name, goal };
+    localStorage.setItem("agentData", JSON.stringify(agentData));
+  };
+
+  const getAgentDataFromLocalStorage = () => {
+    const agentData = localStorage.getItem("agentData");
+    return agentData ? (JSON.parse(agentData) as { name: string; goal: string }) : null;
+  };
+
+  useEffect(() => {
+    if (session !== null) {
+      const agentData = getAgentDataFromLocalStorage();
+
+      if (agentData) {
+        setNameInput(agentData.name);
+        setGoalInput(agentData.goal);
+        localStorage.removeItem("agentData");
+      }
+    }
+  }, [session]);
+
   const handleRestart = () => {
     resetAllMessageSlices();
     resetAllTaskSlices();
@@ -136,13 +157,8 @@ const Home: NextPage = () => {
     }
   };
 
-  const handleVisibleWindowClick = (visibleWindow: "Chat" | "Tasks") => {
-    // This controls whether the ChatWindow or TaskWindow is visible on mobile
-    setMobileVisibleWindow(visibleWindow);
-  };
-
   return (
-    <DashboardLayout>
+    <DashboardLayout rightSidebar={<TaskSidebar />}>
       <HelpDialog />
       <ToolsDialog show={showToolsDialog} close={() => setShowToolsDialog(false)} />
 
@@ -150,7 +166,10 @@ const Home: NextPage = () => {
       <div id="content" className="flex min-h-screen w-full items-center justify-center">
         <div
           id="layout"
-          className="flex h-screen w-full max-w-screen-xl flex-col items-center gap-1 p-2 sm:gap-3 sm:p-4"
+          className={clsx(
+            "flex h-screen w-full max-w-screen-xl flex-col items-center gap-1 p-2 pt-10 sm:gap-3 sm:p-4",
+            agent !== null ? "pt-11" : "pt-3"
+          )}
         >
           {
             <AnimatePresence>
@@ -166,35 +185,10 @@ const Home: NextPage = () => {
               )}
             </AnimatePresence>
           }
-          <div>
-            <Button
-              className={clsx(
-                "rounded-r-none py-0 text-sm sm:py-[0.25em] xl:hidden",
-                mobileVisibleWindow == "Chat" ||
-                  "border-2 border-white/20 bg-gradient-to-t from-sky-500 to-sky-600 hover:bg-gradient-to-t hover:from-sky-400 hover:to-sky-600"
-              )}
-              disabled={mobileVisibleWindow == "Chat"}
-              onClick={() => handleVisibleWindowClick("Chat")}
-            >
-              Chat
-            </Button>
-            <Button
-              className={clsx(
-                "rounded-l-none py-0 text-sm sm:py-[0.25em] xl:hidden",
-                mobileVisibleWindow == "Tasks" ||
-                  "border-2 border-white/20 bg-gradient-to-t from-sky-500 to-sky-600 hover:bg-gradient-to-t hover:from-sky-400 hover:to-sky-600"
-              )}
-              disabled={mobileVisibleWindow == "Tasks"}
-              onClick={() => handleVisibleWindowClick("Tasks")}
-            >
-              Tasks
-            </Button>
-          </div>
           <Expand className="flex w-full flex-grow overflow-hidden">
             <ChatWindow
               messages={messages}
               title={<ChatWindowTitle model={settings.customModelName} />}
-              visibleOnMobile={mobileVisibleWindow === "Chat"}
               chatControls={
                 agent
                   ? {
@@ -222,7 +216,6 @@ const Home: NextPage = () => {
               })}
               <Summarize />
             </ChatWindow>
-            <TaskWindow visibleOnMobile={mobileVisibleWindow === "Tasks"} />
           </Expand>
 
           <FadeIn
