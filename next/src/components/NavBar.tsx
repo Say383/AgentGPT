@@ -12,12 +12,12 @@ import PrimaryButton from "./PrimaryButton";
 import TextButton from "./TextButton";
 import BlogsIcon from "../../public/icons/icon-blogs.svg";
 import DocsIcon from "../../public/icons/icon-docs.svg";
+import GithubIcon from "../../public/icons/icon-github.svg";
 import HomeIcon from "../../public/icons/icon-home.svg";
 import PricingIcon from "../../public/icons/icon-pricing.svg";
-import GithubIcon from "../../public/icons/icon-github.svg";
 
 const navigation = [
-  { name: "Home", href: "/landing-page", icon: <HomeIcon /> },
+  { name: "Home", href: "/home", icon: <HomeIcon /> },
   { name: "Blog", href: "/blog", icon: <BlogsIcon /> },
   { name: "Pricing", href: "https://agentgpt.reworkd.ai/plan", icon: <PricingIcon /> },
   {
@@ -81,7 +81,7 @@ export default function NavBar() {
                   }}
                 >
                   <>
-                    <span>AI Agents</span>
+                    <span>Try demo</span>
                     <FaChevronRight
                       size="12"
                       className="transition-transform group-hover:translate-x-1"
@@ -95,7 +95,7 @@ export default function NavBar() {
                     }}
                   >
                     <>
-                      <span>Contact Us</span>
+                      <span>Join the Waitlist</span>
                       <FaChevronRight
                         size="12"
                         className="text-gray-700 transition-transform group-hover:translate-x-1"
