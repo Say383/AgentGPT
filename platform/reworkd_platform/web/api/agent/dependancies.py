@@ -5,20 +5,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from reworkd_platform.db.crud.agent import AgentCRUD
 from reworkd_platform.db.dependencies import get_db_session
-from reworkd_platform.schemas import (
-    AgentChat,
-    AgentRun,
-    AgentRunCreate,
-    AgentSummarize,
-    AgentTaskAnalyze,
-    AgentTaskCreate,
-    AgentTaskExecute,
+from reworkd_platform.schemas.agent import (
     Loop_Step,
-    UserBase,
+    AgentRunCreate,
+    AgentRun,
+    AgentTaskAnalyze,
+    AgentTaskExecute,
+    AgentTaskCreate,
+    AgentSummarize,
+    AgentChat,
 )
+from reworkd_platform.schemas.user import UserBase
 from reworkd_platform.services.pinecone.pinecone import PineconeMemory
-from reworkd_platform.services.vecs.dependencies import get_supabase_vecs
-from reworkd_platform.services.vecs.vecs import VecsMemory
 from reworkd_platform.settings import settings
 from reworkd_platform.web.api.dependencies import get_current_user
 from reworkd_platform.web.api.memory.memory import AgentMemory
@@ -48,9 +46,6 @@ def get_agent_memory(
     if PineconeMemory.should_use():
         return MemoryWithFallback(PineconeMemory(user.id), NullAgentMemory())
 
-    if settings.supabase_vecs_url:
-        vecs = get_supabase_vecs(request)
-        return MemoryWithFallback(VecsMemory(vecs, user.id), NullAgentMemory())
     elif settings.vector_db_url:
         return MemoryWithFallback(WeaviateMemory(user.id), NullAgentMemory())
     else:
@@ -73,8 +68,7 @@ async def agent_start_validator(
 
 
 async def validate(body: T, crud: AgentCRUD, type_: Loop_Step) -> T:
-    _id = (await crud.create_task(body.run_id, type_)).id
-    body.run_id = str(_id)
+    body.run_id = (await crud.create_task(body.run_id, type_)).id
     return body
 
 
