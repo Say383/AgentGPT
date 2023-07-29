@@ -4,14 +4,13 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import type { FC } from "react";
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 import BlueHeroIcon from "../../../public/icons/icon-hero-blue.svg";
 import GreenHeroIcon from "../../../public/icons/icon-hero-green.svg";
 import OrangeHeroIcon from "../../../public/icons/icon-hero-orange.svg";
 import PurpleHeroIcon from "../../../public/icons/icon-hero-purple.svg";
-import { env } from "../../env/client.mjs";
 import BannerBadge from "../BannerBadge";
 import GlowWrapper from "../GlowWrapper";
 import HeroCard from "../HeroCard";
@@ -44,10 +43,10 @@ const Hero: FC<{ className?: string }> = ({ className }) => {
   };
 
   useEffect(() => {
-    window.addEventListener('resize', handleWindowResize);
+    window.addEventListener("resize", handleWindowResize);
 
     return () => {
-      window.removeEventListener('resize', handleWindowResize);
+      window.removeEventListener("resize", handleWindowResize);
     };
   }, []);
 
@@ -60,15 +59,17 @@ const Hero: FC<{ className?: string }> = ({ className }) => {
       <div className="relative z-30 flex h-full w-full justify-center md:flex md:h-[30vw] md:w-[30vw]">
         <div className="absolute -z-10 h-full w-full bg-gradient-radial from-[#1152FA] via-[#882BFE] to-70% opacity-25" />
         {showVideo ? (
-          <Suspense>
-            <video autoPlay loop muted className="max-h-72 md:hidden" disableRemotePlayback>
-              <source src={`${env.NEXT_PUBLIC_CDN}/orb-v1-medium.webm`} type="video/webm" />
-            </video>
-          </Suspense>
+          <Image
+            src="/prod_square.png"
+            alt="A 3D blob that seems to represent most AI companies"
+            width="500"
+            height="500"
+            className="w-52"
+          />
         ) : (
           <Suspense>
             <Spline
-              scene="https://prod.spline.design/mXSxjCAUYzLpjDfY/scene.splinecode"
+              scene="https://draft.spline.design/n2h-XebGYJ95sdSw/scene.splinecode"
               className="hidden md:flex"
             />
           </Suspense>
@@ -81,7 +82,7 @@ const Hero: FC<{ className?: string }> = ({ className }) => {
             target="_blank"
             className="hidden md:flex"
           >
-            <span className="tracking-wider text-gray-300">Reworkd raises $1.25M pre-seed</span>
+            <span className="tracking-wider text-gray-300">Reworkd raises a $1.25M pre-seed</span>
           </BannerBadge>
           <div className="flex flex-col items-center md:items-start">
             <h1 className="resend-font-effect-hero bg-gradient-to-br from-white to-white/30 bg-clip-text pb-2 text-center text-5xl font-normal tracking-[.09rem] text-transparent md:text-left md:text-5xl lg:text-6xl xl:text-7xl">
@@ -167,7 +168,7 @@ const Hero: FC<{ className?: string }> = ({ className }) => {
               }}
             >
               <>
-                <span className="py-2">AI Agents</span>
+                <span className="py-2">Try demo</span>
                 <FaChevronRight
                   size="12"
                   className="text-gray-400 transition-transform group-hover:translate-x-1"
@@ -183,8 +184,8 @@ const Hero: FC<{ className?: string }> = ({ className }) => {
 
 const roles = [
   {
-    title: "Researcher",
-    subtitle: "Report on key analytics",
+    title: "Web Navigator",
+    subtitle: "List competitor products",
     icon: <PurpleHeroIcon />,
   },
   {
