@@ -1,19 +1,20 @@
-import React, { useState } from "react";
 import clsx from "clsx";
 import type { GetServerSidePropsContext } from "next";
 import Head from "next/head";
-import { FaDiscord, FaGithub, FaGoogle } from "react-icons/fa";
-import type { ClientSafeProvider } from "next-auth/react";
-import { getProviders, signIn, useSession } from "next-auth/react";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../server/auth/auth";
-
-import FadeIn from "../components/motions/FadeIn";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import Input from "../components/Input";
-import type { LiteralUnion } from "next-auth/react/types";
+import { getServerSession } from "next-auth/next";
 import type { BuiltInProviderType } from "next-auth/providers";
+import type { ClientSafeProvider } from "next-auth/react";
+import { getProviders, signIn, useSession } from "next-auth/react";
+import type { LiteralUnion } from "next-auth/react/types";
+import React, { useState } from "react";
+import { FaDiscord, FaGithub, FaGoogle } from "react-icons/fa";
+
+import FadeIn from "../components/motions/FadeIn";
+import { authOptions } from "../server/auth/auth";
+import Checkbox from "../ui/checkbox";
+import Input from "../ui/input";
 
 const SignIn = ({ providers }: { providers: Provider }) => {
   const { data: session } = useSession();
@@ -38,21 +39,20 @@ const SignIn = ({ providers }: { providers: Provider }) => {
             initialY={-50}
             className="flex flex-col items-center justify-center gap-6 text-white"
           >
-            <div className="flex flex-row gap-6">
+            <div className="flex flex-col items-center justify-center gap-16">
               <Image
-                src="logos/dark-default-gradient.svg"
-                width="56"
-                height="56"
+                src="/logos/dark-default-gradient.svg"
+                width="150"
+                height="150"
                 alt="Reworkd AI"
               />
               <h1
-                className={`${clsx(
+                className={clsx(
                   "bg-gradient-to-br from-white via-neutral-300 to-neutral-500 bg-clip-text text-transparent",
                   "text-center text-3xl font-bold leading-[1.1em] tracking-[-0.64px] md:text-5xl"
-                )}`}
+                )}
               >
-                <span className="hidden sm:flex">Welcome to AgentGPT</span>
-                <span className="flex sm:hidden">AgentGPT</span>
+                Welcome to AgentGPT
               </h1>
             </div>
           </FadeIn>
@@ -70,23 +70,30 @@ const SignIn = ({ providers }: { providers: Provider }) => {
 
 const InsecureSignin = () => {
   const [usernameValue, setUsernameValue] = useState("");
+  const adminState = useState(false);
+
   return (
-    <div>
+    <div className="flex flex-col">
       <Input
         value={usernameValue}
         onChange={(e) => setUsernameValue(e.target.value)}
         placeholder="Enter Username"
         type="text"
+        name="Username Field"
       />
+      <Checkbox model={adminState} label="Admin" className="mt-2" />
       <button
         onClick={() => {
           if (!usernameValue) return;
 
-          signIn("credentials", { callbackUrl: "/", name: usernameValue }).catch(console.error);
+          signIn("credentials", {
+            callbackUrl: "/",
+            name: usernameValue,
+            superAdmin: adminState[0],
+          }).catch(console.error);
         }}
         className={clsx(
-          "mb-4 mt-4 flex items-center rounded-md bg-white px-10 py-3 text-sm font-semibold text-black sm:text-base",
-          "transition-colors duration-300 hover:bg-gray-200",
+          "mb-4 mt-4 flex items-center rounded-md bg-white px-10 py-3 text-sm font-semibold text-black transition-colors duration-300 hover:bg-gray-200 sm:text-base",
           !usernameValue && "cursor-not-allowed"
         )}
       >
@@ -128,7 +135,10 @@ const ProviderSignInButton = ({ detail }: { detail: ButtonDetail }) => {
       onClick={() => {
         signIn(detail.id, { callbackUrl: "/" }).catch(console.error);
       }}
-      className={`${detail.color} mb-4 flex items-center rounded-md px-10 py-3 text-base font-semibold shadow-md transition-colors duration-300 sm:px-16 sm:py-5 sm:text-xl`}
+      className={clsx(
+        detail.color,
+        "mb-4 flex w-full items-center rounded-md px-10 py-3 text-base font-semibold shadow-md transition-colors duration-300 sm:px-16 sm:py-5 sm:text-xl"
+      )}
     >
       {detail.icon}
       Sign in with {detail.id}
@@ -149,8 +159,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     };
   }
 
-  const providers = await getProviders();
   return {
-    props: { providers: providers ?? {} },
+    props: { providers: (await getProviders()) ?? {} },
   };
 }
