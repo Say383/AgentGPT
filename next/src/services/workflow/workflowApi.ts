@@ -1,4 +1,5 @@
 import axios from "axios";
+import { Session } from "next-auth";
 import { z } from "zod";
 
 import type { Workflow } from "../../types/workflow";
@@ -10,6 +11,8 @@ const WorkflowMetaSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string(),
+  user_id: z.string(),
+  organization_id: z.string().nullable(),
 });
 
 const PresignedPostSchema = z.object({
@@ -22,39 +25,77 @@ export type PresignedPost = z.infer<typeof PresignedPostSchema>;
 
 export default class WorkflowApi {
   readonly accessToken?: string;
+  readonly organizationId?: string;
 
-  constructor(accessToken?: string) {
+  constructor(accessToken?: string, organizationId?: string) {
     this.accessToken = accessToken;
+    this.organizationId = organizationId;
+  }
+
+  static fromSession(session: Session | null) {
+    return new WorkflowApi(session?.accessToken, session?.user?.organizations[0]?.id);
   }
 
   async getAll() {
-    return await get("/api/workflow", z.array(WorkflowMetaSchema), this.accessToken);
+    return await get(
+      "/api/workflow",
+      z.array(WorkflowMetaSchema),
+      this.accessToken,
+      this.organizationId
+    );
   }
 
   async get(id: string) {
-    return await get(`/api/workflow/${id}`, WorkflowSchema, this.accessToken);
+    return await get(`/api/workflow/${id}`, WorkflowSchema, this.accessToken, this.organizationId);
   }
 
-  async update(id: string, { file, ...data }: Workflow & { file?: File }) {
-    const post = await put(`/api/workflow/${id}`, PresignedPostSchema, data, this.accessToken);
-
-    if (file) {
-      return await this.uploadFile(post, file);
-    }
-
-    return 200;
+  async update(id: string, data: Workflow) {
+    return await put(
+      `/api/workflow/${id}`,
+      z.any(),
+      data,
+      this.accessToken,
+      this.organizationId
+    );
   }
 
   async delete(id: string) {
     await delete_(`/api/workflow/${id}`, this.accessToken);
   }
 
-  async create(workflow: Omit<WorkflowMeta, "id">) {
-    return await post("/api/workflow", WorkflowMetaSchema, workflow, this.accessToken);
+  async create(workflow: Omit<WorkflowMeta, "id" | "user_id" | "organization_id">) {
+    return await post(
+      "/api/workflow",
+      WorkflowMetaSchema,
+      workflow,
+      this.accessToken,
+      this.organizationId
+    );
   }
 
   async execute(id: string) {
-    return await post(`/api/workflow/${id}/execute`, z.string(), {}, this.accessToken);
+    return await post(
+      `/api/workflow/${id}/execute`,
+      z.string(),
+      {},
+      this.accessToken,
+      this.organizationId
+    );
+  }
+
+  async upload(workflow_id: string, block_ref: string, files: File[]) {
+    const posts = await put(
+      `/api/workflow/${workflow_id}/block/${block_ref}/upload`,
+      z.record(PresignedPostSchema),
+      { files: files.map((file) => file.name) },
+      this.accessToken,
+      this.organizationId
+    );
+
+    await Promise.all(
+      // @ts-ignore
+      Object.entries(posts).map(([filename, post], i) => this.uploadFile(post, files[i]))
+    );
   }
 
   async uploadFile(req: PresignedPost, file: File) {
