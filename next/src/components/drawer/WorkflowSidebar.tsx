@@ -1,9 +1,8 @@
-import clsx from "clsx";
-import React, { FC } from "react";
+import type { FC } from "react";
 import { FaBars } from "react-icons/fa";
 import type { Edge, Node } from "reactflow";
 
-import Sidebar from "./Sidebar";
+import { SidebarTransition } from "./Sidebar";
 import type { createNodeType, updateNodeType } from "../../hooks/useWorkflow";
 import { findParents } from "../../services/graph-utils";
 import type { IOField, NodeBlockDefinition } from "../../services/workflow/node-block-definitions";
@@ -11,10 +10,9 @@ import {
   getNodeBlockDefinitionFromNode,
   getNodeBlockDefinitions,
 } from "../../services/workflow/node-block-definitions";
-import { useLayoutStore } from "../../stores/layoutStore";
+import { useConfigStore } from "../../stores/configStore";
 import type { WorkflowEdge, WorkflowNode } from "../../types/workflow";
 import WorkflowSidebarInput from "../../ui/WorkflowSidebarInput";
-import PrimaryButton from "../PrimaryButton";
 
 type WorkflowControls = {
   selectedNode: Node<WorkflowNode> | undefined;
@@ -25,47 +23,31 @@ type WorkflowControls = {
 };
 
 const WorkflowSidebar: FC<WorkflowControls> = (controls) => {
-  const [tab, setTab] = React.useState<"inspect" | "create">("inspect");
-  const { layout, setLayout } = useLayoutStore();
+  const { layout, setLayout } = useConfigStore();
 
   const setShow = (show: boolean) => {
     setLayout({ showRightSidebar: show });
   };
 
   return (
-    <Sidebar show={layout.showRightSidebar} setShow={setShow} side="right">
-      <div className="text-color-primary mx-2 flex h-screen flex-col gap-2">
+    <SidebarTransition
+      show={layout.showRightSidebar}
+      side="right"
+      className="mr-3.5 rounded-lg bg-white p-6 shadow-xl shadow-stone-400"
+    >
+      <div className="text-color-primary flex h-[80vh] w-64 flex-col gap-2  bg-white">
         <div className="flex flex-row items-center gap-1">
           <button
             className="neutral-button-primary rounded-md border-none transition-all"
-            onClick={() => setShow(!layout.showRightSidebar)}
+            onClick={() => setShow(false)}
           >
-            <FaBars size="15" className="z-20 mr-2" />
+            <FaBars size="15" className="z-20 mr-2 text-black" />
           </button>
-          <div className="rounded-full bg-white/10 p-0.5">
-            <PrimaryButton
-              className={clsx(
-                tab != "inspect" && "border-transparent bg-white/0 text-white hover:text-black"
-              )}
-              onClick={() => setTab("inspect")}
-            >
-              Inspect
-            </PrimaryButton>
-            <PrimaryButton
-              className={clsx(
-                tab != "create" && "border-transparent bg-white/0 text-white hover:text-black"
-              )}
-              onClick={() => setTab("create")}
-            >
-              Create
-            </PrimaryButton>
-          </div>
           <div />
         </div>
-        {tab === "inspect" && <InspectSection {...controls} />}
-        {tab === "create" && <CreateSection createNode={controls.createNode} />}
+        <InspectSection {...controls} />
       </div>
-    </Sidebar>
+    </SidebarTransition>
   );
 };
 
@@ -79,7 +61,7 @@ type InspectSectionProps = {
 const InspectSection = ({ selectedNode, updateNode, nodes, edges }: InspectSectionProps) => {
   if (selectedNode == undefined)
     return (
-      <div className="text-sm font-light">
+      <div className="text-sm font-light text-black">
         No components selected. Click on a component to select it
       </div>
     );
@@ -87,7 +69,6 @@ const InspectSection = ({ selectedNode, updateNode, nodes, edges }: InspectSecti
   const definition = getNodeBlockDefinitionFromNode(selectedNode);
 
   const handleValueChange = (name: string, value: string) => {
-    console.log("handleValueChange", name, value);
     const updatedNode = { ...selectedNode };
     updatedNode.data.block.input[name] = value;
     updateNode(updatedNode);
@@ -114,11 +95,11 @@ const InspectSection = ({ selectedNode, updateNode, nodes, edges }: InspectSecti
   return (
     <>
       <div>
-        <p className="text-lg font-bold">{definition?.type}</p>
-        <p className="mb-3 text-sm font-thin">{definition?.description}</p>
+        <p className="font-inter text-lg font-bold text-black">{definition?.type}</p>
+        <p className="mb-3 font-inter text-sm font-light text-black">{definition?.description}</p>
       </div>
       <hr className="border-neutral-500" />
-      <div className="font-bold">Inputs</div>
+      <div className="font-inter font-bold text-black">Inputs</div>
       {definition?.input_fields.map((inputField: IOField) => (
         <div key={definition?.type + inputField.name}>
           <WorkflowSidebarInput
@@ -130,23 +111,29 @@ const InspectSection = ({ selectedNode, updateNode, nodes, edges }: InspectSecti
         </div>
       ))}
       {definition?.input_fields.length == 0 && (
-        <p className="text-sm font-thin">This node does not take any input.</p>
+        <p className="font-inter text-sm text-black">This node does not take any input.</p>
       )}
       <hr className="border-neutral-500" />
-      <div className="font-bold">Outputs</div>
-      <div className="flex flex-col gap-2">
-        {definition?.output_fields.map((outputField: IOField) => (
-          <div key={definition?.type + outputField.name}>
-            <p>
-              <span className="text-sm font-bold">{outputField.name}:</span>{" "}
-              <span className="text-sm">{outputField.type}</span>
-            </p>
-            <p className="text-sm font-thin">{outputField.description}</p>
-          </div>
-        ))}
-        {definition?.output_fields.length == 0 && (
-          <p className="text-sm font-thin">This node does not have any output.</p>
-        )}
+      <div className="font-inter">
+        <div className="font-bold text-black">Outputs</div>
+        <div className="mt-2 flex flex-col gap-2 text-black">
+          {definition?.output_fields.map((outputField: IOField) => (
+            <div key={definition?.type + outputField.name} className="text-sm">
+              <p>
+                <span className="font-normal leading-6">{outputField.name}:</span>{" "}
+                <span className="text-xs font-light text-gray-500 lg:text-sm">
+                  {outputField.type}
+                </span>
+              </p>
+              <p className="text-xs font-light text-gray-500 lg:text-sm">
+                {outputField.description}
+              </p>
+            </div>
+          ))}
+          {definition?.output_fields.length == 0 && (
+            <p className="font-thin">This node does not have any output.</p>
+          )}
+        </div>
       </div>
     </>
   );
@@ -184,7 +171,7 @@ const NodeBlock = ({ definition, createNode }: NodeBlockProps) => {
           input[field.name] = "";
         }
 
-        createNode({ input: input, type: definition.type });
+        createNode({ input: input, type: definition.type }, { x: 0, y: 0 });
       }}
     >
       <div className="flex items-center gap-2">
